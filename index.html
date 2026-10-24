@@ -39,8 +39,6 @@
     min-height:100vh;
     min-height:100dvh;
     display:flex;
-    align-items:center;
-    justify-content:center;
     padding:24px 16px;
     font-family:'Nunito', system-ui, sans-serif;
     color:var(--cream);
@@ -74,6 +72,7 @@
     z-index:1;
     width:100%;
     max-width:560px;
+    margin:auto;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -359,6 +358,9 @@
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <main>
+  <h1>Happy Birthday!</h1>
+  <p class="tagline">there's something for you inside &mdash;</p>
+
   <div class="reveal" id="reveal" hidden>
     <div class="frame">
       <img id="drawing" src="drawing.jpg" alt="A drawing for Mom" onerror="this.hidden=true; document.getElementById('placeholder').hidden=false;">
@@ -380,9 +382,6 @@
     </div>
     <button class="replay" id="replay" type="button">open it again</button>
   </div>
-
-  <h1>Happy Birthday!</h1>
-  <p class="tagline">there's something for you inside &mdash;</p>
 
   <div class="present-wrap" id="present" role="button" tabindex="0" aria-label="Open your present">
     <div class="lid"></div>
@@ -535,12 +534,12 @@
 
   // builds the regions hugging each open side of a rect (clamped to the viewport),
   // so bursts land around the content instead of anywhere on screen
-  function regionsAroundRect(rect, avoidBelowY){
+  function regionsAroundRect(rect, avoidAboveY){
     var vw = window.innerWidth, vh = window.innerHeight;
     var pad = 14, buffer = 16, minSpan = 46;
-    var bottomLimit = vh - pad;
-    if (typeof avoidBelowY === 'number' && avoidBelowY > rect.bottom) {
-      bottomLimit = Math.min(bottomLimit, avoidBelowY - buffer);
+    var topLimit = pad;
+    if (typeof avoidAboveY === 'number' && avoidAboveY < rect.top) {
+      topLimit = Math.max(topLimit, avoidAboveY + buffer);
     }
     var regions = [];
     if (rect.left - buffer - pad > minSpan) {
@@ -555,28 +554,28 @@
         y0: Math.max(pad, rect.top - 50), y1: Math.min(vh - pad, rect.bottom + 50)
       });
     }
-    if (rect.top - buffer - pad > minSpan * 0.7) {
+    if (rect.top - buffer - topLimit > minSpan * 0.7) {
       regions.push({
         x0: Math.max(pad, rect.left - 30), x1: Math.min(vw - pad, rect.right + 30),
-        y0: pad, y1: rect.top - buffer
+        y0: topLimit, y1: rect.top - buffer
       });
     }
-    if (bottomLimit - (rect.bottom + buffer) > minSpan * 0.7) {
+    if ((vh - pad) - (rect.bottom + buffer) > minSpan * 0.7) {
       regions.push({
         x0: Math.max(pad, rect.left - 30), x1: Math.min(vw - pad, rect.right + 30),
-        y0: rect.bottom + buffer, y1: bottomLimit
+        y0: rect.bottom + buffer, y1: vh - pad
       });
     }
     return regions;
   }
 
-  function launchFireworksAround(rect, avoidBelowY){
+  function launchFireworksAround(rect, avoidAboveY){
     var order = fireworkPhrases.slice();
     for (var i = order.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var t = order[i]; order[i] = order[j]; order[j] = t;
     }
-    var regions = regionsAroundRect(rect, avoidBelowY);
+    var regions = regionsAroundRect(rect, avoidAboveY);
     if (!regions.length) {
       regions.push({ x0: 14, x1: window.innerWidth - 14, y0: 14, y1: window.innerHeight - 14 });
     }
@@ -611,10 +610,12 @@
     if (opened) return;
     opened = true;
     present.classList.add('opened');
+    present.blur(); // the box growing below it can otherwise trigger the browser's focus-follow autoscroll
     var rect = present.getBoundingClientRect();
     burstConfetti(rect.left + rect.width/2, rect.top + rect.height*0.3);
     setTimeout(function(){
       reveal.hidden = false;
+      window.scrollTo(0, 0); // instant, so the FLIP math below measures the settled layout
 
       // FLIP: snap the reveal to the present's position/scale, then transition it
       // to its natural (now top-of-page) spot, so it visibly bursts out of the present
@@ -637,13 +638,13 @@
       setTimeout(function(){
         var frameRect = document.querySelector('.frame').getBoundingClientRect();
         var messageRect = document.querySelector('.message').getBoundingClientRect();
-        var headingTop = document.querySelector('h1').getBoundingClientRect().top;
+        var taglineBottom = document.querySelector('.tagline').getBoundingClientRect().bottom;
         launchFireworksAround({
           left: Math.min(frameRect.left, messageRect.left),
           right: Math.max(frameRect.right, messageRect.right),
           top: Math.min(frameRect.top, messageRect.top),
           bottom: Math.max(frameRect.bottom, messageRect.bottom)
-        }, headingTop);
+        }, taglineBottom);
       }, 850);
     }, 350);
   }
