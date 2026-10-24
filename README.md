@@ -12,7 +12,7 @@ Right now the reveal shows a placeholder ("a drawing is on its way"). To swap in
 
 ## Swapping in the real poem
 
-The poem section currently shows a placeholder classical Chinese quatrain (杜牧's 清明) so you can see the layout. To swap in your own 4-line, 7-character poem, edit the `<div class="poem" id="poem">` block in `index.html` — replace the text inside each `<p class="poem-line">...</p>` (one line per `<p>`), and update or remove the `<p class="poem-credit">` line below it.
+The poem section currently shows a placeholder classical Chinese quatrain (杜牧's 清明) so you can see the layout. To swap in your own 4-line, 7-character poem, edit the `<div class="poem" id="poem">` block in `index.html` — replace the text inside each `<p class="poem-line">...</p>` (one line per `<p>`).
 
 ## Local preview
 
