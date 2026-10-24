@@ -527,7 +527,7 @@
   // so bursts land around the content instead of anywhere on screen
   function regionsAroundRect(rect, avoidAboveY){
     var vw = window.innerWidth, vh = window.innerHeight;
-    var pad = 14, buffer = 16, minSpan = 46;
+    var pad = 14, buffer = 38, minSpan = 46;
     var topLimit = pad;
     if (typeof avoidAboveY === 'number' && avoidAboveY < rect.top) {
       topLimit = Math.max(topLimit, avoidAboveY + buffer);
@@ -560,35 +560,42 @@
     return regions;
   }
 
-  function launchFireworksAround(rect, avoidAboveY){
-    var order = fireworkPhrases.slice();
-    for (var i = order.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = order[i]; order[i] = order[j]; order[j] = t;
-    }
+  function launchFireworksAround(rect, textRect, avoidAboveY){
+    // the frame+poem block is often taller than a phone viewport, so a region that
+    // clears both can be impossible — fall back to just clearing the poem text
+    // (the frame is only decorative) before giving up and allowing anywhere
     var regions = regionsAroundRect(rect, avoidAboveY);
+    if (!regions.length) regions = regionsAroundRect(textRect, avoidAboveY);
     if (!regions.length) {
       regions.push({ x0: 14, x1: window.innerWidth - 14, y0: 14, y1: window.innerHeight - 14 });
-    }
-    var regionOrder = regions.slice();
-    for (var k = regionOrder.length - 1; k > 0; k--) {
-      var m = Math.floor(Math.random() * (k + 1));
-      var rt = regionOrder[k]; regionOrder[k] = regionOrder[m]; regionOrder[m] = rt;
     }
     // keep the label (and its glow) fully inside the viewport, even in a narrow side column
     var halfLabelW = Math.min(75, window.innerWidth * 0.16) + 8;
     var halfLabelH = 34;
-    order.forEach(function(p, idx){
-      setTimeout(function(){
-        var r = regionOrder[idx % regionOrder.length];
-        var x = r.x0 + Math.random() * Math.max(1, r.x1 - r.x0);
-        var y = r.y0 + Math.random() * Math.max(1, r.y1 - r.y0);
-        x = Math.min(Math.max(x, halfLabelW), window.innerWidth - halfLabelW);
-        y = Math.min(Math.max(y, halfLabelH), window.innerHeight - halfLabelH);
-        sparkBurst(x, y, p.color);
-        fireworkLabel(x, y, p.text, p.color);
-      }, idx * 260);
-    });
+    var lastPhrase = -1;
+
+    function spawnOne(){
+      var pIdx = Math.floor(Math.random() * fireworkPhrases.length);
+      if (pIdx === lastPhrase) pIdx = (pIdx + 1) % fireworkPhrases.length;
+      lastPhrase = pIdx;
+      var p = fireworkPhrases[pIdx];
+      var r = regions[Math.floor(Math.random() * regions.length)];
+      var x = r.x0 + Math.random() * Math.max(1, r.x1 - r.x0);
+      var y = r.y0 + Math.random() * Math.max(1, r.y1 - r.y0);
+      x = Math.min(Math.max(x, halfLabelW), window.innerWidth - halfLabelW);
+      y = Math.min(Math.max(y, halfLabelH), window.innerHeight - halfLabelH);
+      sparkBurst(x, y, p.color);
+      fireworkLabel(x, y, p.text, p.color);
+    }
+
+    // keep spamming fireworks around the content for ~5 seconds
+    var duration = 5000, spacing = 300, elapsed = 0;
+    spawnOne();
+    var spamInterval = setInterval(function(){
+      elapsed += spacing;
+      spawnOne();
+      if (elapsed >= duration) clearInterval(spamInterval);
+    }, spacing);
   }
 
   // present interaction
@@ -626,7 +633,12 @@
         reveal.style.opacity = '1';
       });
 
-      setTimeout(function(){
+      // wait for the burst-out transform to actually finish (it overshoots past its
+      // final size) before measuring — measuring mid-overshoot puts fireworks at
+      // positions that end up inside the settled frame instead of around it
+      reveal.addEventListener('transitionend', function onSettled(e){
+        if (e.target !== reveal || e.propertyName !== 'transform') return;
+        reveal.removeEventListener('transitionend', onSettled);
         var frameRect = document.querySelector('.frame').getBoundingClientRect();
         var messageRect = document.querySelector('.message').getBoundingClientRect();
         var taglineBottom = document.querySelector('.tagline').getBoundingClientRect().bottom;
@@ -635,8 +647,8 @@
           right: Math.max(frameRect.right, messageRect.right),
           top: Math.min(frameRect.top, messageRect.top),
           bottom: Math.max(frameRect.bottom, messageRect.bottom)
-        }, taglineBottom);
-      }, 850);
+        }, messageRect, taglineBottom);
+      });
     }, 350);
   }
 
