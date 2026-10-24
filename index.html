@@ -6,7 +6,7 @@
 <title>A Little Surprise</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,600&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg-top:#140F2B;
@@ -246,13 +246,12 @@
     align-items:center;
     gap:18px;
     opacity:0;
-    transform:translateY(16px) scale(0.96);
-    transition:opacity .6s ease, transform .6s ease;
+    transform:translate(0,0) scale(1);
+    transition:opacity .5s ease, transform .8s cubic-bezier(.17,.89,.32,1.49);
     pointer-events:none;
   }
   .reveal.show{
     opacity:1;
-    transform:translateY(0) scale(1);
     pointer-events:auto;
   }
 
@@ -298,20 +297,34 @@
     font-weight:600;
   }
 
-  .message h2{
-    font-family:'Fredoka', system-ui, sans-serif;
-    font-weight:600;
-    font-size:clamp(26px,7.5vw,34px);
-    margin:0 0 8px;
+  .poem-eyebrow{
+    margin:0 0 4px;
+    font-family:'Noto Serif TC', serif;
+    font-weight:500;
+    font-size:clamp(13px,3.4vw,15px);
+    letter-spacing:0.3em;
     color:var(--gold);
-    text-wrap:balance;
   }
-  .message p{
+  .poem{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+  .poem-line{
     margin:0;
-    font-size:clamp(16px,4.3vw,19px);
-    line-height:1.6;
+    font-family:'Noto Serif TC', serif;
+    font-weight:700;
+    font-size:clamp(20px,5.8vw,27px);
+    letter-spacing:0.14em;
+    color:var(--cream);
+  }
+  .poem-credit{
+    margin:10px 0 0;
+    font-size:clamp(12px,3.2vw,13.5px);
+    font-style:italic;
     color:var(--cream-dim);
-    max-width:420px;
+    max-width:320px;
   }
 
   .replay{
@@ -346,15 +359,6 @@
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <main>
-  <h1>Happy Birthday!</h1>
-  <p class="tagline">there's something for you inside &mdash;</p>
-
-  <div class="present-wrap" id="present" role="button" tabindex="0" aria-label="Open your present">
-    <div class="lid"></div>
-    <div class="bow"></div>
-    <div class="box"></div>
-  </div>
-
   <div class="reveal" id="reveal" hidden>
     <div class="frame">
       <img id="drawing" src="drawing.jpg" alt="A drawing for Mom" onerror="this.hidden=true; document.getElementById('placeholder').hidden=false;">
@@ -365,10 +369,25 @@
       </div>
     </div>
     <div class="message">
-      <h2>To the best mom ever</h2>
-      <p>However many candles are on the cake this year, they don't come close to how much warmth you bring into every single day. Thank you for everything, always. Happy birthday &mdash; I hope today feels as special as you make everyone else feel.</p>
+      <p class="poem-eyebrow">獻給媽媽</p>
+      <div class="poem" id="poem">
+        <p class="poem-line">清明時節雨紛紛</p>
+        <p class="poem-line">路上行人欲斷魂</p>
+        <p class="poem-line">借問酒家何處有</p>
+        <p class="poem-line">牧童遙指杏花村</p>
+      </div>
+      <p class="poem-credit">— 杜牧，《清明》（placeholder — swap in your own four lines)</p>
     </div>
     <button class="replay" id="replay" type="button">open it again</button>
+  </div>
+
+  <h1>Happy Birthday!</h1>
+  <p class="tagline">there's something for you inside &mdash;</p>
+
+  <div class="present-wrap" id="present" role="button" tabindex="0" aria-label="Open your present">
+    <div class="lid"></div>
+    <div class="bow"></div>
+    <div class="box"></div>
   </div>
 </main>
 
@@ -516,9 +535,13 @@
 
   // builds the regions hugging each open side of a rect (clamped to the viewport),
   // so bursts land around the content instead of anywhere on screen
-  function regionsAroundRect(rect){
+  function regionsAroundRect(rect, avoidBelowY){
     var vw = window.innerWidth, vh = window.innerHeight;
     var pad = 14, buffer = 16, minSpan = 46;
+    var bottomLimit = vh - pad;
+    if (typeof avoidBelowY === 'number' && avoidBelowY > rect.bottom) {
+      bottomLimit = Math.min(bottomLimit, avoidBelowY - buffer);
+    }
     var regions = [];
     if (rect.left - buffer - pad > minSpan) {
       regions.push({
@@ -538,22 +561,22 @@
         y0: pad, y1: rect.top - buffer
       });
     }
-    if ((vh - pad) - (rect.bottom + buffer) > minSpan * 0.7) {
+    if (bottomLimit - (rect.bottom + buffer) > minSpan * 0.7) {
       regions.push({
         x0: Math.max(pad, rect.left - 30), x1: Math.min(vw - pad, rect.right + 30),
-        y0: rect.bottom + buffer, y1: vh - pad
+        y0: rect.bottom + buffer, y1: bottomLimit
       });
     }
     return regions;
   }
 
-  function launchFireworksAround(rect){
+  function launchFireworksAround(rect, avoidBelowY){
     var order = fireworkPhrases.slice();
     for (var i = order.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var t = order[i]; order[i] = order[j]; order[j] = t;
     }
-    var regions = regionsAroundRect(rect);
+    var regions = regionsAroundRect(rect, avoidBelowY);
     if (!regions.length) {
       regions.push({ x0: 14, x1: window.innerWidth - 14, y0: 14, y1: window.innerHeight - 14 });
     }
@@ -592,19 +615,36 @@
     burstConfetti(rect.left + rect.width/2, rect.top + rect.height*0.3);
     setTimeout(function(){
       reveal.hidden = false;
+
+      // FLIP: snap the reveal to the present's position/scale, then transition it
+      // to its natural (now top-of-page) spot, so it visibly bursts out of the present
+      var revealRect = reveal.getBoundingClientRect();
+      var presentRect = present.getBoundingClientRect();
+      var dx = (presentRect.left + presentRect.width / 2) - (revealRect.left + revealRect.width / 2);
+      var dy = (presentRect.top + presentRect.height / 2) - (revealRect.top + revealRect.height / 2);
+      reveal.style.transition = 'none';
+      reveal.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)';
+      reveal.style.opacity = '0';
+      reveal.offsetHeight; // force reflow so the start state actually applies
+      reveal.style.transition = '';
+
       requestAnimationFrame(function(){
         reveal.classList.add('show');
+        reveal.style.transform = 'translate(0,0) scale(1)';
+        reveal.style.opacity = '1';
       });
+
       setTimeout(function(){
         var frameRect = document.querySelector('.frame').getBoundingClientRect();
         var messageRect = document.querySelector('.message').getBoundingClientRect();
+        var headingTop = document.querySelector('h1').getBoundingClientRect().top;
         launchFireworksAround({
           left: Math.min(frameRect.left, messageRect.left),
           right: Math.max(frameRect.right, messageRect.right),
           top: Math.min(frameRect.top, messageRect.top),
           bottom: Math.max(frameRect.bottom, messageRect.bottom)
-        });
-      }, 650);
+        }, headingTop);
+      }, 850);
     }, 350);
   }
 
@@ -618,8 +658,11 @@
 
   replay.addEventListener('click', function(){
     reveal.classList.remove('show');
+    reveal.style.opacity = '0';
     setTimeout(function(){
       reveal.hidden = true;
+      reveal.style.transform = '';
+      reveal.style.opacity = '';
       present.classList.remove('opened');
       opened = false;
     }, 500);
