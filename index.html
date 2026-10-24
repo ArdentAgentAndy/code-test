@@ -210,7 +210,7 @@
     position:fixed;
     left:0;
     top:0;
-    width:150px;
+    width:clamp(92px, 32vw, 150px);
     z-index:6;
     pointer-events:none;
     font-family:'Fredoka', system-ui, sans-serif;
@@ -508,19 +508,64 @@
     el.addEventListener('animationend', function(){ el.remove(); });
   }
 
-  function launchFireworks(){
+  // builds the regions hugging each open side of a rect (clamped to the viewport),
+  // so bursts land around the content instead of anywhere on screen
+  function regionsAroundRect(rect){
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var pad = 14, buffer = 16, minSpan = 46;
+    var regions = [];
+    if (rect.left - buffer - pad > minSpan) {
+      regions.push({
+        x0: pad, x1: rect.left - buffer,
+        y0: Math.max(pad, rect.top - 50), y1: Math.min(vh - pad, rect.bottom + 50)
+      });
+    }
+    if ((vw - pad) - (rect.right + buffer) > minSpan) {
+      regions.push({
+        x0: rect.right + buffer, x1: vw - pad,
+        y0: Math.max(pad, rect.top - 50), y1: Math.min(vh - pad, rect.bottom + 50)
+      });
+    }
+    if (rect.top - buffer - pad > minSpan * 0.7) {
+      regions.push({
+        x0: Math.max(pad, rect.left - 30), x1: Math.min(vw - pad, rect.right + 30),
+        y0: pad, y1: rect.top - buffer
+      });
+    }
+    if ((vh - pad) - (rect.bottom + buffer) > minSpan * 0.7) {
+      regions.push({
+        x0: Math.max(pad, rect.left - 30), x1: Math.min(vw - pad, rect.right + 30),
+        y0: rect.bottom + buffer, y1: vh - pad
+      });
+    }
+    return regions;
+  }
+
+  function launchFireworksAround(rect){
     var order = fireworkPhrases.slice();
     for (var i = order.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var t = order[i]; order[i] = order[j]; order[j] = t;
     }
+    var regions = regionsAroundRect(rect);
+    if (!regions.length) {
+      regions.push({ x0: 14, x1: window.innerWidth - 14, y0: 14, y1: window.innerHeight - 14 });
+    }
+    var regionOrder = regions.slice();
+    for (var k = regionOrder.length - 1; k > 0; k--) {
+      var m = Math.floor(Math.random() * (k + 1));
+      var rt = regionOrder[k]; regionOrder[k] = regionOrder[m]; regionOrder[m] = rt;
+    }
+    // keep the label (and its glow) fully inside the viewport, even in a narrow side column
+    var halfLabelW = Math.min(75, window.innerWidth * 0.16) + 8;
+    var halfLabelH = 34;
     order.forEach(function(p, idx){
       setTimeout(function(){
-        var marginX = Math.min(85, window.innerWidth * 0.17);
-        var topMargin = window.innerHeight * 0.09;
-        var bottomMargin = window.innerHeight * 0.56;
-        var x = marginX + Math.random() * (window.innerWidth - marginX * 2);
-        var y = topMargin + Math.random() * (bottomMargin - topMargin);
+        var r = regionOrder[idx % regionOrder.length];
+        var x = r.x0 + Math.random() * Math.max(1, r.x1 - r.x0);
+        var y = r.y0 + Math.random() * Math.max(1, r.y1 - r.y0);
+        x = Math.min(Math.max(x, halfLabelW), window.innerWidth - halfLabelW);
+        y = Math.min(Math.max(y, halfLabelH), window.innerHeight - halfLabelH);
         sparkBurst(x, y, p.color);
         fireworkLabel(x, y, p.text, p.color);
       }, idx * 260);
@@ -539,12 +584,21 @@
     present.classList.add('opened');
     var rect = present.getBoundingClientRect();
     burstConfetti(rect.left + rect.width/2, rect.top + rect.height*0.3);
-    launchFireworks();
     setTimeout(function(){
       reveal.hidden = false;
       requestAnimationFrame(function(){
         reveal.classList.add('show');
       });
+      setTimeout(function(){
+        var frameRect = document.querySelector('.frame').getBoundingClientRect();
+        var messageRect = document.querySelector('.message').getBoundingClientRect();
+        launchFireworksAround({
+          left: Math.min(frameRect.left, messageRect.left),
+          right: Math.max(frameRect.right, messageRect.right),
+          top: Math.min(frameRect.top, messageRect.top),
+          bottom: Math.max(frameRect.bottom, messageRect.bottom)
+        });
+      }, 650);
     }, 350);
   }
 
