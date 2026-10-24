@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Little Surprise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-top:#140F2B;
+    --bg-bottom:#1F1640;
+    --card:#241B49;
+    --cream:#FBF7F0;
+    --cream-dim:#CFC8E8;
+    --gold:#F5B942;
+    --coral:#FF6B6B;
+    --teal:#4ECDC4;
+    --lavender:#B8A4FF;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg-top);
+    overscroll-behavior:none;
+  }
+
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px;
+    font-family:'Nunito', system-ui, sans-serif;
+    color:var(--cream);
+    background:radial-gradient(ellipse at 50% -10%, var(--bg-bottom), var(--bg-top) 70%);
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  .stars{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+  }
+  .star{
+    position:absolute;
+    width:3px;
+    height:3px;
+    border-radius:50%;
+    background:var(--cream);
+    opacity:0.5;
+    animation:twinkle 2.6s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:0.15;}
+    50%{opacity:0.8;}
+  }
+
+  main{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:480px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:28px;
+    text-align:center;
+  }
+
+  h1{
+    font-family:'Fredoka', system-ui, sans-serif;
+    font-weight:600;
+    font-size:clamp(28px,7vw,40px);
+    letter-spacing:0.3px;
+    margin:0;
+    text-wrap:balance;
+    color:var(--cream);
+  }
+
+  .tagline{
+    margin:0;
+    font-size:15px;
+    color:var(--cream-dim);
+    font-style:italic;
+  }
+
+  canvas#confetti{
+    position:fixed;
+    inset:0;
+    z-index:5;
+    pointer-events:none;
+  }
+
+  /* ---- Present ---- */
+  .present-wrap{
+    position:relative;
+    width:220px;
+    height:220px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .present-wrap.opened{cursor:default;}
+
+  .box{
+    position:relative;
+    width:180px;
+    height:140px;
+    background:linear-gradient(135deg, var(--coral), #e85a5a);
+    border-radius:10px;
+    box-shadow:0 18px 40px -10px rgba(0,0,0,0.55);
+    transition:transform .5s ease, opacity .5s ease;
+  }
+
+  .box::before,.box::after{
+    content:"";
+    position:absolute;
+    background:var(--gold);
+  }
+  /* vertical ribbon */
+  .box::before{
+    width:26px;
+    left:50%;
+    top:0;
+    bottom:0;
+    transform:translateX(-50%);
+  }
+  /* horizontal ribbon */
+  .box::after{
+    height:26px;
+    top:50%;
+    left:0;
+    right:0;
+    transform:translateY(-50%);
+  }
+
+  .lid{
+    position:absolute;
+    bottom:140px;
+    left:50%;
+    transform:translateX(-50%);
+    width:198px;
+    height:34px;
+    background:linear-gradient(135deg, #ff8080, var(--coral));
+    border-radius:8px;
+    box-shadow:0 8px 16px -6px rgba(0,0,0,0.4);
+    transition:transform .6s cubic-bezier(.3,1.4,.6,1), opacity .5s ease;
+    z-index:2;
+  }
+  .lid::after{
+    content:"";
+    position:absolute;
+    width:26px;
+    top:-14px;
+    left:50%;
+    height:30px;
+    transform:translateX(-50%);
+    background:var(--gold);
+    border-radius:50% 50% 0 0;
+  }
+
+  .bow{
+    position:absolute;
+    left:50%;
+    top:-18px;
+    transform:translateX(-50%);
+    width:64px;
+    height:34px;
+    z-index:3;
+    transition:transform .5s ease, opacity .5s ease;
+  }
+  .bow::before,.bow::after{
+    content:"";
+    position:absolute;
+    width:30px;
+    height:30px;
+    background:var(--gold);
+    border-radius:60% 60% 60% 0;
+    top:0;
+  }
+  .bow::before{left:0; transform:rotate(-40deg);}
+  .bow::after{right:0; transform:rotate(40deg) scaleX(-1);}
+
+  .hint{
+    margin-top:16px;
+    font-size:14px;
+    color:var(--cream-dim);
+    animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-4px);}
+  }
+
+  .present-wrap.opened .lid{
+    transform:translate(-120%,-70px) rotate(-50deg);
+    opacity:0;
+  }
+  .present-wrap.opened .bow{
+    transform:translate(60%,-60px) rotate(50deg);
+    opacity:0;
+  }
+  .present-wrap.opened .box{
+    transform:scale(0.85);
+    opacity:0;
+  }
+  .present-wrap.opened .hint{
+    opacity:0;
+  }
+
+  /* ---- Reveal ---- */
+  .reveal[hidden]{
+    display:none;
+  }
+  .reveal{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    opacity:0;
+    transform:translateY(16px) scale(0.96);
+    transition:opacity .6s ease, transform .6s ease;
+    pointer-events:none;
+  }
+  .reveal.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    pointer-events:auto;
+  }
+
+  .frame{
+    width:min(78vw,300px);
+    aspect-ratio:4/5;
+    border-radius:16px;
+    background:var(--card);
+    border:3px solid var(--lavender);
+    box-shadow:0 20px 50px -15px rgba(0,0,0,0.6);
+    padding:10px;
+    display:flex;
+  }
+  .frame img,
+  .frame .placeholder{
+    width:100%;
+    height:100%;
+    border-radius:10px;
+    object-fit:cover;
+  }
+  .placeholder{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    text-align:center;
+    padding:20px;
+    background:
+      repeating-linear-gradient(45deg, rgba(184,164,255,0.08) 0 10px, transparent 10px 20px),
+      linear-gradient(160deg, #2c2159, #1c1540);
+    border:2px dashed var(--lavender);
+    color:var(--cream-dim);
+    font-size:13px;
+  }
+  .placeholder .big{
+    font-size:34px;
+  }
+  .placeholder strong{
+    color:var(--cream);
+    font-family:'Fredoka', system-ui, sans-serif;
+    font-size:15px;
+    font-weight:600;
+  }
+
+  .message h2{
+    font-family:'Fredoka', system-ui, sans-serif;
+    font-weight:600;
+    font-size:clamp(22px,6vw,28px);
+    margin:0 0 8px;
+    color:var(--gold);
+    text-wrap:balance;
+  }
+  .message p{
+    margin:0;
+    font-size:15.5px;
+    line-height:1.6;
+    color:var(--cream-dim);
+    max-width:360px;
+  }
+
+  .replay{
+    margin-top:4px;
+    background:none;
+    border:1.5px solid var(--lavender);
+    color:var(--cream);
+    font-family:'Nunito', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .2s ease, transform .15s ease;
+  }
+  .replay:hover{background:rgba(184,164,255,0.15);}
+  .replay:active{transform:scale(0.96);}
+  .replay:focus-visible,
+  .present-wrap:focus-visible .box{
+    outline:2px solid var(--gold);
+    outline-offset:4px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" aria-hidden="true" id="stars"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main>
+  <h1>Happy Birthday!</h1>
+  <p class="tagline">there's something for you inside &mdash;</p>
+
+  <div class="present-wrap" id="present" role="button" tabindex="0" aria-label="Open your present">
+    <div class="lid"></div>
+    <div class="bow"></div>
+    <div class="box"></div>
+  </div>
+  <p class="hint" id="hint">tap the present</p>
+
+  <div class="reveal" id="reveal" hidden>
+    <div class="frame">
+      <img id="drawing" src="drawing.jpg" alt="A drawing for Mom" onerror="this.hidden=true; document.getElementById('placeholder').hidden=false;">
+      <div class="placeholder" id="placeholder" hidden>
+        <span class="big">🎨</span>
+        <strong>a drawing is on its way</strong>
+        <span>(this spot is saved just for it)</span>
+      </div>
+    </div>
+    <div class="message">
+      <h2>To the best mom ever</h2>
+      <p>However many candles are on the cake this year, they don't come close to how much warmth you bring into every single day. Thank you for everything, always. Happy birthday &mdash; I hope today feels as special as you make everyone else feel.</p>
+    </div>
+    <button class="replay" id="replay" type="button">open it again</button>
+  </div>
+</main>
+
+<script>
+  // ambient stars
+  (function(){
+    var wrap = document.getElementById('stars');
+    var n = 50;
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = (Math.random()*100) + '%';
+      s.style.top = (Math.random()*100) + '%';
+      s.style.animationDelay = (Math.random()*2.6) + 's';
+      wrap.appendChild(s);
+    }
+  })();
+
+  // confetti
+  var canvas = document.getElementById('confetti');
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var rafId = null;
+  var colors = ['#FF6B6B','#F5B942','#4ECDC4','#B8A4FF','#FBF7F0'];
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function burstConfetti(originX, originY){
+    var count = 140;
+    for (var i = 0; i < count; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 4 + Math.random() * 9;
+      particles.push({
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 4,
+        size: 5 + Math.random() * 5,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        rot: Math.random() * Math.PI,
+        vrot: (Math.random()-0.5) * 0.3,
+        life: 0,
+        shape: Math.random() > 0.5 ? 'rect' : 'circle'
+      });
+    }
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+
+  function tick(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    var alive = false;
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.vy += 0.16;
+      p.vx *= 0.993;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      p.life++;
+      var fade = Math.max(0, 1 - p.life/160);
+      if (fade <= 0 || p.y > canvas.height + 40) {
+        particles.splice(i,1);
+        continue;
+      }
+      alive = true;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.size/2, -p.size/3, p.size, p.size*0.6);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0,0,p.size/2,0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    if (alive) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      rafId = null;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
+  // present interaction
+  var present = document.getElementById('present');
+  var reveal = document.getElementById('reveal');
+  var hint = document.getElementById('hint');
+  var replay = document.getElementById('replay');
+  var opened = false;
+
+  function openPresent(){
+    if (opened) return;
+    opened = true;
+    present.classList.add('opened');
+    var rect = present.getBoundingClientRect();
+    burstConfetti(rect.left + rect.width/2, rect.top + rect.height*0.3);
+    setTimeout(function(){
+      reveal.hidden = false;
+      requestAnimationFrame(function(){
+        reveal.classList.add('show');
+      });
+    }, 350);
+  }
+
+  present.addEventListener('click', openPresent);
+  present.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPresent();
+    }
+  });
+
+  replay.addEventListener('click', function(){
+    reveal.classList.remove('show');
+    setTimeout(function(){
+      reveal.hidden = true;
+      present.classList.remove('opened');
+      opened = false;
+    }, 500);
+  });
+</script>
+
+</body>
+</html>
