@@ -271,6 +271,9 @@
     border-radius:10px;
     object-fit:cover;
   }
+  .placeholder[hidden]{
+    display:none;
+  }
   .placeholder{
     display:flex;
     flex-direction:column;
@@ -351,7 +354,7 @@
 
 <main>
   <h1>Happy Birthday!</h1>
-  <p class="tagline">there's something for you inside &mdash;</p>
+  <p class="tagline">please tap on the present</p>
 
   <div class="reveal" id="reveal" hidden>
     <div class="frame">
@@ -363,7 +366,7 @@
       </div>
     </div>
     <div class="message">
-      <p class="poem-eyebrow">獻給媽媽</p>
+      <p class="poem-eyebrow">獻給小丸子阿媽</p>
       <div class="poem" id="poem">
         <p class="poem-line">十月廿六賀生辰，</p>
         <p class="poem-line">彎腰駝背像蝦仁。</p>
