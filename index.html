@@ -88,6 +88,7 @@
     margin:0;
     text-wrap:balance;
     color:var(--cream);
+    transition:opacity .4s ease;
   }
 
   .tagline{
@@ -95,6 +96,13 @@
     font-size:clamp(16px,4.2vw,19px);
     color:var(--cream-dim);
     font-style:italic;
+    transition:opacity .4s ease;
+  }
+
+  h1.intro-fade,
+  .tagline.intro-fade{
+    opacity:0;
+    pointer-events:none;
   }
 
   canvas#confetti{
@@ -605,6 +613,8 @@
   var present = document.getElementById('present');
   var reveal = document.getElementById('reveal');
   var replay = document.getElementById('replay');
+  var heading = document.querySelector('h1');
+  var tagline = document.querySelector('.tagline');
   var opened = false;
 
   function openPresent(){
@@ -612,6 +622,14 @@
     opened = true;
     present.classList.add('opened');
     present.blur(); // the box growing below it can otherwise trigger the browser's focus-follow autoscroll
+    heading.classList.add('intro-fade');
+    tagline.classList.add('intro-fade');
+    // wait until the reveal's burst-out animation (350ms delay + 800ms transition) is
+    // done before collapsing their layout space, so that space doesn't shift mid-flight
+    setTimeout(function(){
+      heading.hidden = true;
+      tagline.hidden = true;
+    }, 1300);
     var rect = present.getBoundingClientRect();
     burstConfetti(rect.left + rect.width/2, rect.top + rect.height*0.3);
     setTimeout(function(){
@@ -666,6 +684,12 @@
   replay.addEventListener('click', function(){
     reveal.classList.remove('show');
     reveal.style.opacity = '0';
+    heading.hidden = false;
+    tagline.hidden = false;
+    requestAnimationFrame(function(){
+      heading.classList.remove('intro-fade');
+      tagline.classList.remove('intro-fade');
+    });
     setTimeout(function(){
       reveal.hidden = true;
       reveal.style.transform = '';
